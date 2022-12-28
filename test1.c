@@ -43,10 +43,10 @@ int main()
     }
 
     // Join threads
-    for(int i=0; i<10; i++)
-    {
-        pthread_join(threads[i], NULL);
-    }
+    // for(int i=0; i<10; i++)
+    // {
+    //     pthread_join(threads[i], NULL);
+    // }
 
     return 0;
 }
