@@ -39,6 +39,7 @@ int proController;
 int conController;
 
 // struct candy *c;
+struct candy item;
 
 void *producer(void *arg)
 {
@@ -46,11 +47,12 @@ void *producer(void *arg)
     sem_wait(&empty);
     pthread_mutex_lock(&mutex);
 
-    buffer[in] = candyArr[selected];
-    in = (in + 1) % MAX_ITEMS;
-    count++;
-    //printf("produced\n");
-    
+    if(buffer[in].id == -1 && in <= takeBufferSize){
+        buffer[in] = candyArr[selected];
+        in = (in + 1) % MAX_ITEMS;
+        count++;
+        //printf("produced\n");
+    }
     pthread_mutex_unlock(&mutex);
     conController++;
     sem_post(&full);
@@ -63,8 +65,8 @@ void *consumer(void *arg)
     sem_wait(&full);
     pthread_mutex_lock(&mutex);
 
-    struct candy item = buffer[out];
-    printf("%s ", item.type);
+    item = buffer[out];
+    // printf("%s ", item.type);
 
     buffer[out].id = -1;
     buffer[out].type[0] = '\0';
@@ -131,6 +133,8 @@ int main()
     scanf("%d", &takeBufferSize);
     createCandy();
 
+    proController = takeBufferSize;
+
     //printf("%d", MAX_ITEMS);
 
     int input;
@@ -151,7 +155,7 @@ int main()
             printf("How many candy you want to produce: ");
             scanf("%d", &numProducer);
             for(int i = 0; i < numProducer; i++){
-                if(count <= MAX_ITEMS){
+                if(proController >= 1){
                     selected = selectCandy();
                     pthread_create(&producer_t[i], NULL, (void *)producer, NULL);
                     printf("Producer %d: produced %s candy", i, candyArr[selected].type);
@@ -167,19 +171,25 @@ int main()
             printf("\nHow many candy you want to consume: ");
             scanf("%d", &numConsumer);
             for(int i = 0; i < numConsumer; i++){
-                if(count == 0){
-                    printf("buffer is empty\n");
+                if(conController > 0){
+                    pthread_create(&consumer_t[i], NULL, (void *)consumer, NULL);
+                    printf("%s ", item.type);
+                    printf("consumed from Buffer %d\n", out);
                 }
                 else{
-                    pthread_create(&consumer_t[i], NULL, (void *)consumer, NULL);
-                    printf("consumed from Buffer %d\n", out-1);
+                    printf("buffer is empty\n");
+                    break;
                 }
             }
         }
         else if(input == 3){
             for(int i = 0; i < takeBufferSize; i++){
-                if(buffer[i].type[2] != '\0'){
+                if(buffer[i].type[0] != '\0'){
                     printf("%d. %s\n", i, buffer[i].type);
+                }
+                else{
+                    printf("Buffer is empty.\n");
+                    break;
                 }
             }
             // for(int i = 0; i < takeBufferSize; i++){
