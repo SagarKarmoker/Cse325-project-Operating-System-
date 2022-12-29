@@ -24,7 +24,7 @@ int out = 0;
 // for pack
 int serial = 0;
 int maxCandyInBox = 0;
-struct candy pack[MAX_ITEMS][MAX_ITEMS];
+struct candy box[MAX_ITEMS][MAX_ITEMS];
 struct candy candyArr[MAX_ITEMS];
 
 // user input 
@@ -47,9 +47,9 @@ void *producer(void *arg)
     sem_wait(&empty);
     pthread_mutex_lock(&mutex);
 
-    if(buffer[in].id == -1 && in <= takeBufferSize){
+    if(buffer[in].id == -1){
         buffer[in] = candyArr[selected];
-        in = (in + 1) % MAX_ITEMS;
+        in = (in + 1) % takeBufferSize;
         count++;
         //printf("produced\n");
     }
@@ -72,6 +72,7 @@ void *consumer(void *arg)
     buffer[out].type[0] = '\0';
     out = (out + 1) % MAX_ITEMS;
     count--;
+    proController++;
     
     pthread_mutex_unlock(&mutex);
     sem_post(&empty);
@@ -163,6 +164,7 @@ int main()
                 }
                 else{
                     printf("buffer is full\n");
+                    break;
                 }
             }
         }
@@ -173,8 +175,15 @@ int main()
             for(int i = 0; i < numConsumer; i++){
                 if(conController > 0){
                     pthread_create(&consumer_t[i], NULL, (void *)consumer, NULL);
-                    printf("%s ", item.type);
-                    printf("consumed from Buffer %d\n", out);
+                    if(i == 0){
+                        printf("%s ", buffer[0].type);
+                        printf("consumed from Buffer %d\n", out-1);
+                    }
+                    else{
+                        printf("%s ", item.type);
+                        printf("consumed from Buffer %d\n", out-1);
+                    }
+                    
                 }
                 else{
                     printf("buffer is empty\n");
