@@ -19,8 +19,11 @@ pthread_mutex_t mutex;
 struct candy buffer[MAX_ITEMS];
 int selected;
 int count = 0;
+// used for producer and consumer
 int in = 0;
 int out = 0;
+int proController;
+int conController;
 // for pack
 int serial = 0;
 int maxCandyInBox = 0;
@@ -35,9 +38,6 @@ int candyTypes;
 bool flag = false;
 int pCnt;
 int cCnt;
-
-int proController;
-int conController;
 int ch;
 
 // struct candy *c;
@@ -70,12 +70,15 @@ void *consumer(void *arg)
     item = buffer[out];
     // printf("%s ", item.type);
 
-    box[serial][maxCandyInBox] = item;
-    maxCandyInBox++;
-
-    if(maxCandyInBox == maximumCandy){
+    if(maxCandyInBox < maximumCandy){
+        box[serial][maxCandyInBox] = item;
+        maxCandyInBox++;
+    }
+    else{
         serial++;
         maxCandyInBox = 0;
+        box[serial][maxCandyInBox] = item;
+        maxCandyInBox++;
     }
 
     buffer[out].id = -1;
@@ -124,6 +127,12 @@ int selectCandy()
     }
 }
 
+void pChoice();
+void cChoice();
+void showBuffer();
+void typesOfCandy();
+void candyInBOX();
+
 int main()
 {
     sem_init(&empty, 0, MAX_ITEMS);
@@ -155,7 +164,7 @@ int main()
     //printf("%d", MAX_ITEMS);
 
     int input;
-    printf("Welcome to Amherst Candy Factory\n");
+    printf("\nWelcome to Amherst Candy Factory\n");
     printf("1. Candy Produce\n");
     printf("2. Candy Consume\n");
     printf("3. Show Assembly Line \n");
@@ -163,7 +172,7 @@ int main()
     printf("5. Show Available Packages \n");
     printf("0. Exit the factory\n");
 
-    printf("Enter your option: ");
+    printf("\nEnter your option: ");
     scanf("%d", &input);
 
     while(input != 0){
@@ -197,11 +206,11 @@ int main()
                     pthread_create(&consumer_t[i], NULL, (void *)consumer, NULL);
                     if(i == 0){
                         printf("%s ", buffer[0].type);
-                        printf("consumed from Buffer %d\n", out-1);
+                        printf("consumed from Buffer %d\n", out);
                     }
                     else{
-                        printf("%s ", item.type);
-                        printf("consumed from Buffer %d\n", out-1);
+                        printf("%s ", buffer[i].type);
+                        printf("consumed from Buffer %d\n", i);
                     }
                     
                 }
@@ -217,51 +226,16 @@ int main()
             
         }
         else if(input == 3){
-            for(int i = 0; i < takeBufferSize; i++){
-                if(buffer[i].type[0] != '\0'){
-                    printf("%d. %s\n", i, buffer[i].type);
-                }
-                else{
-                    printf("Buffer is empty.\n");
-                    break;
-                }
-            }
-            // for(int i = 0; i < takeBufferSize; i++){
-            //     printf("%d. %s\n", buffer[i].id, buffer[i].type);
-            // }
+            showBuffer();
         }
         else if(input == 4){
-            for(int i= 0; i < candyTypes; i++){
-                if(candyArr[i].type[2] != '\0'){
-                    printf("%d. %s\n", i, candyArr[i].type);
-                }
-            }
+            typesOfCandy();
         }
         else if(input == 5){
-            int j = 0;
-            for(int i = 0; i < serial; i++){
-                if(box[i][j].id == -1){
-                    printf("No candy in Box\n");
-                    break;
-                }
-                else{
-                    printf("Box %d contains:\n", i);
-                
-                    while(j < maxCandyInBox){
-                        int idx = box[i][j].id;
-                        printf("%d %s\n", j, candyArr[idx].type);
-                        j++;
-                        if(box[i][j].id == -1){
-                            j = 0;
-                            break;
-                        }
-                    }
-                }
-                
-            }
+            candyInBOX();
         }
 
-        printf("Welcome to Amherst Candy Factory\n");
+        printf("\nWelcome to Amherst Candy Factory\n");
         printf("1. Candy Produce\n");
         printf("2. Candy Consume\n");
         printf("3. Show Assembly Line \n");
@@ -279,4 +253,121 @@ int main()
     sem_destroy(&full);
     pthread_mutex_destroy(&mutex);
     return 0;
+}
+
+/*
+void pChoice(){
+    int numProducer;
+    printf("How many candy you want to produce: ");
+    scanf("%d", &numProducer);
+    ch = numProducer;
+    for (int i = 0; i < numProducer; i++)
+    {
+        if (proController >= 1)
+        {
+            selected = selectCandy();
+            pthread_create(&producer_t[i], NULL, (void *)producer, NULL);
+            printf("Producer %d: produced %s candy", i, candyArr[selected].type);
+            printf(" Stored at %d of the Buffer\n", in);
+        }
+        else
+        {
+            printf("buffer is full\n");
+            break;
+        }
+    }
+}
+
+void cChoice(){
+    int numConsumer;
+    if (conController > 0)
+    {
+        printf("\nHow many candy you want to consume: ");
+        scanf("%d", &numConsumer);
+        printf("How many candy you want in a Box: ");
+        scanf("%d", &maximumCandy);
+        for (int i = 0; i < numConsumer; i++)
+        {
+            if (conController > 0)
+            {
+                pthread_create(&consumer_t[i], NULL, (void *)consumer, NULL);
+                if (i == 0)
+                {
+                    printf("%s ", buffer[0].type);
+                    printf("consumed from Buffer %d\n", out);
+                }
+                else
+                {
+                    printf("%s ", item.type);
+                    printf("consumed from Buffer %d\n", out - 1);
+                }
+            }
+            else
+            {
+                printf("buffer is empty\n");
+                break;
+            }
+        }
+    }
+    else
+    {
+        printf("buffer is empty\n");
+    }
+}
+*/
+
+void candyInBOX()
+{
+    printf("%d\n", serial);
+    if (serial > 0)
+    {
+        for (int i = 0; i < serial; i++)
+        {
+            printf("Box %d contains:\n", i);
+
+            for (int j = 0; j < maxCandyInBox; j++)
+            {
+                if(box[i][j].id != -1){
+                    int idx = box[i][j].id;
+                    printf("%d %s\n", j, candyArr[idx].type);
+                }
+            }
+        }
+    }
+    else
+    {
+        printf("No candy in Box\n");
+    }
+}
+
+void showBuffer(){
+    printf("Available Candies in the Assembly Line:\n");
+    for (int i = 0; i < takeBufferSize; i++)
+    {
+        if (buffer[i].id != -1)
+        {
+            printf("%d. %s\n", i, buffer[i].type);
+        }
+        else if(buffer[i].id == -1){
+            continue;
+        }
+        else
+        {
+            printf("Buffer is empty.\n");
+            break;
+        }
+    }
+    // for(int i = 0; i < takeBufferSize; i++){
+    //     printf("%d. %s\n", buffer[i].id, buffer[i].type);
+    // }
+}
+
+void typesOfCandy(){
+    for (int i = 0; i < candyTypes; i++)
+    {
+        if (candyArr[i].type[2] != '\0')
+        {
+            printf("%d. %s\n", i, candyArr[i].type);
+        }
+    }
 }
