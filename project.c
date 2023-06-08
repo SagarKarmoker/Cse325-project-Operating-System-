@@ -26,6 +26,7 @@ int in = 0;
 int out = 0;
 int proController;
 int conController;
+int pnt = 0,cnt = 0;
 
 // for pack
 int serial = 0;
@@ -54,6 +55,7 @@ void *candyProducer(void *arg)
         // printf("produced\n");
         conController++;
     }
+    cnt++;
     pthread_mutex_unlock(&mutex);
     sem_post(&full);
     return NULL;
@@ -81,6 +83,7 @@ void *candyConsumer(void *arg)
     buffer[out].type[0] = '\0';
     out = (out + 1) % takeBufferSize;
 
+    cnt--;
     proController++;
     candyCounterINBuffer--;
 
@@ -219,8 +222,14 @@ int main()
                 scanf("%d", &numConsumer);
                 if (numConsumer <= candyCounterINBuffer)
                 {
-                    printf("How many candy you want in a Box: ");
-                    scanf("%d", &maximumCandy);
+                    if(maximumCandy > 0){
+                        printf("You already given maximum candy in a box previously: %d\n", maximumCandy);
+                    }
+                    else{
+                        printf("How many candy you want in a Box: ");
+                        scanf("%d", &maximumCandy);
+                    }
+                    
                     for (int i = 0; i < numConsumer; i++)
                     {
                         if (conController > 0)
@@ -233,7 +242,7 @@ int main()
                             }
                             else
                             {
-                                printf("%s ", buffer[i].type);
+                                printf("%s ", buffer[cnt + i].type);
                                 printf("consumed from Buffer %d\n", i);
                             }
                         }
